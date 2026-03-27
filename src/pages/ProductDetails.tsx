@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { MessageCircle, ArrowLeft, CheckCircle, Shield, Truck, AlertCircle } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { 
+  MessageCircle, ArrowLeft, CheckCircle, Shield, Truck, 
+  AlertCircle, ShoppingCart, ShieldCheck, Award, Layers, Info 
+} from 'lucide-react';
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import 'react-quill-new/dist/quill.snow.css';
@@ -8,16 +11,19 @@ import { formatCurrency } from '../components/ProductCard';
 
 import { getProductById } from '../services/db';
 import type { Product } from '../services/db';
+import { useCart } from '../context/CartContext';
 
 function ProductDetails() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     if (!id) return;
-    
+
     getProductById(id)
       .then(data => {
         if (!data) throw new Error('Product not found');
@@ -34,47 +40,51 @@ function ProductDetails() {
   if (loading) return <div className="text-center section heading-md text-muted">Loading Product Details...</div>;
   if (!product) return <div className="text-center section heading-md text-muted">Product Not Found</div>;
 
-  const whatsappMessage = `Hi, I am interested to buy the product ${product.name} priced at ${formatCurrency(product.price)}. Please share more details.`;
-  const whatsappUrl = `https://wa.me/919959916507?text=${encodeURIComponent(whatsappMessage)}`;
+  const handleAddToCart = () => {
+    if (product) {
+      addToCart(product);
+      navigate('/cart');
+    }
+  };
 
   return (
     <div className="section container animate-fade-in" style={{ padding: '2rem 1.5rem', minHeight: '80vh' }}>
       <Link to="/products" className="btn btn-outline mb-6" style={{ marginBottom: '2rem', display: 'inline-flex' }}>
         <ArrowLeft size={16} style={{ marginRight: '0.5rem' }} /> Back to Products
       </Link>
-      
-      <div className="card glass" style={{ 
+
+      <div className="card glass" style={{
         display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden'
       }}>
         <div style={{ background: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', gap: '1rem', borderBottom: '1px solid #e2e8f0' }}>
           {/* Main Image with Zoom */}
           <Zoom key={selectedImage}>
-            <img 
-              src={selectedImage || 'https://via.placeholder.com/600'} 
-              alt={product.name} 
+            <img
+              src={selectedImage || 'https://via.placeholder.com/600'}
+              alt={product.name}
               loading="lazy"
-              style={{ width: '100%', objectFit: 'contain', maxHeight: '600px', borderRadius: '0.5rem' }} 
+              style={{ width: '100%', objectFit: 'contain', maxHeight: '600px', borderRadius: '0.5rem' }}
             />
           </Zoom>
-          
+
           {/* Thumbnails if multiple images exist */}
           {product.images && product.images.length > 1 && (
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '1rem' }}>
               {product.images.map((imgUrl, index) => (
-                <img 
+                <img
                   key={index}
-                  src={imgUrl} 
-                  alt={`${product.name} thumbnail ${index + 1}`} 
+                  src={imgUrl}
+                  alt={`${product.name} thumbnail ${index + 1}`}
                   loading="lazy"
-                  style={{ 
-                    width: '80px', 
-                    height: '80px', 
-                    objectFit: 'cover', 
-                    borderRadius: '0.25rem', 
-                    border: `2px solid ${selectedImage === imgUrl ? 'var(--color-primary)' : 'transparent'}`, 
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    objectFit: 'cover',
+                    borderRadius: '0.25rem',
+                    border: `2px solid ${selectedImage === imgUrl ? 'var(--color-primary)' : 'transparent'}`,
                     cursor: 'pointer',
                     transition: 'border-color 0.2s'
-                  }} 
+                  }}
                   onClick={() => setSelectedImage(imgUrl)}
                   onMouseOver={() => setSelectedImage(imgUrl)}
                 />
@@ -82,24 +92,36 @@ function ProductDetails() {
             </div>
           )}
         </div>
-        
+
         {/* Product Details */}
-        <div style={{ padding: '3rem', display: 'flex', flexDirection: 'column' }}>
-          <div className="mb-4" style={{ marginBottom: '1rem' }}>
+        <div style={{ padding: 'clamp(1rem, 5vw, 3rem)', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex-between mb-4 flex-wrap gap-4">
+            <span className="badge">{product.category}</span>
             <span className="badge">{product.category}</span>
           </div>
-          
+
           <h1 className="heading-lg" style={{ marginBottom: '1rem' }}>{product.name}</h1>
           <div className="text-primary font-bold mb-6" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '2rem' }}>
-            {formatCurrency(product.price)}
+            {(!product.pricingType || product.pricingType === 'standard') ? (
+              formatCurrency(product.price)
+            ) : (
+              <div className="flex flex-col gap-1">
+                <span style={{ fontSize: '1.2rem', color: 'var(--color-primary)', display: 'block', background: 'rgba(30, 58, 138, 0.05)', padding: '0.8rem 1.2rem', borderRadius: '0.5rem', border: '1px solid rgba(30, 58, 138, 0.1)' }}>
+                  Please Contact for Price
+                </span>
+                {product.pricingType === 'wholesale' && (
+                  <span className="text-sm text-green-600 font-bold uppercase tracking-widest">Wholesale Price Available</span>
+                )}
+              </div>
+            )}
           </div>
-          
+
           <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem' }}>
-            <span 
-              className="badge" 
-              style={{ 
-                background: product.inStock ? 'var(--color-success)' : '#EF4444', 
-                color: 'white', 
+            <span
+              className="badge"
+              style={{
+                background: product.inStock ? 'var(--color-success)' : '#EF4444',
+                color: 'white',
                 border: 'none',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -116,40 +138,88 @@ function ProductDetails() {
           <div className="text-muted text-lg mb-8 ql-editor" style={{ fontSize: '1.1rem', marginBottom: '2rem', lineHeight: '1.8', padding: 0 }} dangerouslySetInnerHTML={{ __html: product.description }}>
           </div>
 
-          {(product.specifications || product.brand || product.material) && (
+          {product.specifications && (
             <div className="specifications" style={{ marginBottom: '3rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '0.5rem' }}>
               <h3 className="heading-sm" style={{ marginBottom: '1rem' }}>Specifications</h3>
-              <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '1rem', color: '#4b5563' }}>
-                {product.specifications || (
-                  <ul style={{ display: 'grid', gap: '0.8rem' }}>
-                    {product.brand && <li><strong>Brand:</strong> {product.brand}</li>}
-                    {product.material && <li><strong>Material:</strong> {product.material}</li>}
-                    {product.size && <li><strong>Size:</strong> {product.size}</li>}
-                    {product.capacity && <li><strong>Capacity:</strong> {product.capacity}</li>}
-                  </ul>
-                )}
-              </div>
+              <div
+                className="ql-editor"
+                style={{ padding: 0, fontSize: '1rem', color: '#4b5563' }}
+                dangerouslySetInnerHTML={{ __html: product.specifications }}
+              />
             </div>
           )}
-          
-          {/* Trust Attributes */}
-          <div className="flex mb-8" style={{ gap: '1.5rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
-            <div className="flex-center" style={{ gap: '0.5rem', color: 'var(--text-secondary)' }}><CheckCircle size={20} className="text-primary" /> Genuine Product</div>
-            <div className="flex-center" style={{ gap: '0.5rem', color: 'var(--text-secondary)' }}><Shield size={20} className="text-primary" /> Warranty Support</div>
-            <div className="flex-center" style={{ gap: '0.5rem', color: 'var(--text-secondary)' }}><Truck size={20} className="text-primary" /> Delivery Available</div>
+
+          {/* Trust Attributes (Promises) */}
+          {/* Trust Attributes (Promises) - One per line (Task 6) */}
+          <div className="flex flex-col mb-10 gap-4" style={{ marginBottom: '3rem' }}>
+            {(product.promises?.genuine !== false) && (
+              <div className="flex items-center gap-3 text-slate-700 font-semibold bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                <ShieldCheck size={22} className="text-primary" /> 
+                <span>100% Genuine Branded Product</span>
+              </div>
+            )}
+            {product.promises?.warranty && (
+              <div className="flex items-center gap-3 text-slate-700 font-semibold bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                <Shield size={22} className="text-primary" /> 
+                <span>Official Warranty Support</span>
+              </div>
+            )}
+            {product.promises?.delivery && (
+              <div className="flex bg-blue-50/50 p-4 rounded-xl items-center justify-between border border-blue-100">
+                <div className="flex items-center gap-3 text-blue-900 font-bold">
+                  <Truck size={22} className="text-primary" /> 
+                  <span>Delivery Available</span>
+                </div>
+                <Link to="/delivery" className="flex items-center gap-1.5 text-sm text-primary hover:underline font-extrabold bg-white px-3 py-1.5 rounded-lg shadow-sm">
+                  <Info size={14} /> Instructions
+                </Link>
+              </div>
+            )}
+            {product.promises?.steel && (
+              <div className="flex items-center gap-3 text-slate-700 font-semibold bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                <Layers size={22} className="text-primary" /> 
+                <span>Premium Stainless Steel</span>
+              </div>
+            )}
+            {product.promises?.guaranty && (
+              <div className="flex items-center gap-3 text-slate-700 font-semibold bg-slate-50 p-3 rounded-xl border border-slate-100/50">
+                <Award size={22} className="text-primary" /> 
+                <span>Product Guaranty Included</span>
+              </div>
+            )}
           </div>
 
-          <a 
-            href={whatsappUrl} 
-            target="_blank" 
-            rel="noreferrer" 
-            className="btn btn-whatsapp" 
-            style={{ padding: '1rem 2rem', fontSize: '1.2rem', marginTop: 'auto', textAlign: 'center' }}
-          >
-            <MessageCircle size={24} style={{ marginRight: '0.8rem' }} /> Order on WhatsApp
-          </a>
+          <div className="product-action-grid">
+            <button
+              onClick={handleAddToCart}
+              className="btn btn-secondary product-action-btn"
+            >
+              <ShoppingCart size={20} /> <span className="btn-text">Add to Cart</span>
+            </button>
+            <Link
+              to={product.inStock ? `/checkout/${product.id}` : '#'}
+              className={`btn btn-primary product-action-btn ${!product.inStock ? 'disabled-btn' : ''}`}
+              style={{ 
+                opacity: product.inStock ? 1 : 0.6,
+                cursor: product.inStock ? 'pointer' : 'not-allowed',
+                textDecoration: 'none'
+              }}
+            >
+              <MessageCircle size={22} /> <span className="btn-text">Order now</span>
+            </Link>
+          </div>
         </div>
       </div>
+
+      <style>{`
+        .product-action-grid { display: flex; gap: 0.75rem; margin-top: auto; width: 100%; }
+        .product-action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.25rem 0.5rem !important; font-size: 1.1rem; font-weight: 800; border-radius: 1rem; white-space: nowrap; }
+
+        @media (max-width: 600px) {
+          .product-action-btn .btn-text { font-size: 0.9rem; }
+          .product-action-btn { gap: 0.35rem; padding: 1rem 0.25rem !important; }
+        }
+      `}</style>
     </div>
   );
 }

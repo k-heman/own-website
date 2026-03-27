@@ -1,7 +1,7 @@
 import { collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, query, where, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export type Product = {
+export interface Product {
   id: string;
   name: string;
   category: string;
@@ -15,11 +15,42 @@ export type Product = {
   material?: string;
   size?: string;
   capacity?: string;
-};
+  pricingType?: 'standard' | 'wholesale' | 'contact';
+  stock?: string;
+  promises?: {
+    genuine: boolean;
+    delivery: boolean;
+    warranty: boolean;
+    steel?: boolean;
+    guaranty?: boolean;
+  };
+}
 
 export type Category = {
   id: string;
   name: string;
+};
+
+export type Order = {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  fullName: string;
+  mobile: string;
+  address: {
+    village: string;
+    mandal: string;
+    district: string;
+    state: string;
+    pincode: string;
+  };
+  quantity: number;
+  createdAt: any;
+  status: 'pending' | 'available' | 'not available' | 'shipping' | 'ready for delivery' | 'delivered' | 'cancelled';
+  deliveryStatus: 'pending' | 'available' | 'not available' | 'shipping' | 'ready for delivery' | 'delivered' | 'cancelled';
+  userId?: string;
+  deliveryDate?: string;
 };
 
 // CATEGORIES
@@ -78,4 +109,31 @@ export const updateProduct = async (id: string, productData: Partial<Product>): 
 
 export const deleteProduct = async (id: string): Promise<void> => {
   await deleteDoc(doc(db, 'products', id));
+};
+
+// ORDERS
+export const addOrder = async (orderData: Omit<Order, 'id' | 'createdAt' | 'status' | 'deliveryStatus'>): Promise<string> => {
+  const docRef = await addDoc(collection(db, 'orders'), {
+    ...orderData,
+    status: 'pending',
+    deliveryStatus: 'pending',
+    createdAt: new Date().toISOString(),
+  });
+  return docRef.id;
+};
+
+export const updateOrder = async (id: string, orderData: Partial<Order>): Promise<void> => {
+  const docRef = doc(db, 'orders', id);
+  await updateDoc(docRef, orderData as any);
+};
+
+export const getOrders = async (): Promise<Order[]> => {
+  const querySnapshot = await getDocs(collection(db, 'orders'));
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+};
+
+export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
+  const q = query(collection(db, 'orders'), where('userId', '==', userId));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
 };

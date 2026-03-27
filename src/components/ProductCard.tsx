@@ -1,21 +1,15 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-type Product = {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  description: string;
-  image: string;
-  inStock: boolean;
-};
+import type { Product } from '../services/db';
+import { useAuth } from '../context/AuthContext';
 
 type ProductCardProps = {
   product: Product;
 };
 
 // Format currency in Indian Rupees
-export const formatCurrency = (amount: number) => {
+export const formatCurrency = (amount: number | undefined) => {
+  if (amount === undefined || isNaN(amount)) return 'Price on Request';
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -24,6 +18,18 @@ export const formatCurrency = (amount: number) => {
 };
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleDetailsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      navigate('/login');
+    } else {
+      navigate(`/products/${product.id}`);
+    }
+  };
+
   return (
     <div className="card flex-col animate-fade-in" style={{ height: '100%' }}>
       <div 
@@ -40,48 +46,69 @@ export default function ProductCard({ product }: ProductCardProps) {
           style={{ 
             width: '100%', 
             height: '100%', 
-            objectFit: 'cover',
+            objectFit: 'contain',
+            padding: '1rem',
             transition: 'transform 0.5s ease',
+            backgroundColor: '#f8fafc'
           }} 
           loading="lazy"
           className="product-img"
         />
-        <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-          <span className="badge glass-dark text-light" style={{ color: 'white' }}>{product.category}</span>
-          <span 
-            className="badge" 
-            style={{ 
-              background: product.inStock ? 'var(--color-success)' : '#EF4444', 
-              color: 'white', 
-              border: 'none',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)' 
-            }}
-          >
-            {product.inStock ? 'In Stock' : 'Out of Stock'}
-          </span>
+        <div className="product-badges" style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-end' }}>
+          <span className="badge glass-dark text-light" style={{ color: 'white', fontSize: '0.65rem', padding: '0.2rem 0.5rem' }}>{product.category}</span>
+          {product.stock && (
+            <span 
+              className="badge" 
+              style={{ 
+                background: 'rgba(255, 255, 255, 0.9)', 
+                color: '#B91C1C', 
+                border: '1px solid #FEE2E2',
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                padding: '0.2rem 0.5rem'
+              }}
+            >
+              {product.stock}
+            </span>
+          )}
+          {!product.inStock && (
+            <span 
+              className="badge" 
+              style={{ 
+                background: '#EF4444', 
+                color: 'white', 
+                border: 'none',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                fontSize: '0.65rem',
+                padding: '0.2rem 0.5rem'
+              }}
+            >
+              Out of Stock
+            </span>
+          )}
         </div>
       </div>
       
-      <div className="card-content flex-col" style={{ flexGrow: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-        <h3 className="heading-sm" style={{ marginBottom: '0.5rem', flexGrow: 1 }}>{product.name}</h3>
-        <p className="text-muted" style={{ 
-          marginBottom: '1rem', 
-          fontSize: '0.9rem', 
-          display: '-webkit-box', 
-          WebkitLineClamp: 2, 
-          WebkitBoxOrient: 'vertical', 
-          overflow: 'hidden' 
-        }}>
-          {product.description.replace(/<[^>]*>?/gm, '')}
-        </p>
+      <div className="card-content flex-col" style={{ flexGrow: 1, padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+        <h3 className="heading-xs" style={{ marginBottom: '0.5rem', flexGrow: 1, fontSize: '0.95rem', lineHeight: '1.3' }}>{product.name}</h3>
         
-        <div className="flex-between" style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-          <span className="text-primary font-semibold" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-            {formatCurrency(product.price)}
+        <div className="flex-between" style={{ marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid rgba(0,0,0,0.05)', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span className="text-primary font-bold" style={{ fontSize: '1.1rem', fontWeight: 800 }}>
+            {(!product.pricingType || product.pricingType === 'standard') ? (
+              formatCurrency(product.price)
+            ) : product.pricingType === 'wholesale' ? (
+              <span style={{ color: '#059669', fontSize: '0.9rem' }}>Wholesale Price</span>
+            ) : (
+              <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>Contact for Price</span>
+            )}
           </span>
-          <Link to={`/products/${product.id}`} className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}>
-            View Details
-          </Link>
+           <button 
+             onClick={handleDetailsClick} 
+             className="btn btn-outline" 
+             style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', flexShrink: 0 }}
+           >
+            Details
+          </button>
         </div>
       </div>
     </div>

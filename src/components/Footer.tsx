@@ -34,7 +34,7 @@ function Footer() {
             </li>
             <li className="flex" style={{ gap: '1rem', alignItems: 'center' }}>
               <Phone size={20} className="text-accent" />
-              <span>+91 99599 16507</span>
+              <span>+91 9014627762 <br />+91 99599 16507</span>
             </li>
             <li className="flex" style={{ gap: '1rem', alignItems: 'center' }}>
               <Mail size={20} className="text-accent" />
@@ -45,7 +45,7 @@ function Footer() {
       </div>
 
       <div className="container" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', color: 'var(--text-muted)' }}>
-        <p>&copy; {new Date().getFullYear()} Heman Enterprises. All Rights Reserved.</p>
+        <p>Developed by <a href="https://www.linkedin.com/in/heman-k/" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-primary transition">K. Heman</a><br /> <br /> &copy; {new Date().getFullYear()} Heman Enterprises. All Rights Reserved. <br /><br /></p>
       </div>
     </footer>
   );

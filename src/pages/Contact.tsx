@@ -1,7 +1,11 @@
 import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function Contact() {
-  const whatsappUrl = `https://wa.me/919959916507?text=Hello%20Heman%20Enterprises!`;
+  const { user } = useAuth();
+  const userName = user?.username || 'Guest';
+  const whatsappMessage = `Hello, I am ${userName}, I have a query about your products and services.`;
+  const whatsappUrl = `https://wa.me/919959916507?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
     <div className="section container animate-fade-in" style={{ padding: '3rem 1.5rem', minHeight: '80vh' }}>
